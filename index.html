@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anime4u Networks</title>
+<meta name="description" content="Anime4u Networks — your gateway to every channel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   TOKENS
+===================================================================== */
+:root{
+  --obsidian:      #07060b;
+  --obsidian-2:    #0e0c16;
+  --obsidian-3:    #16121f;
+  --purple-1:      #6d28d9;
+  --purple-2:      #9333ea;
+  --purple-glow:   #c084fc;
+  --purple-soft:   rgba(168,85,247,0.35);
+  --ember:         #ff4d2e;
+  --ember-2:       #ffb200;
+  --water:         #1fa2ff;
+  --water-2:       #7bf1ff;
+  --text:          #ece9f4;
+  --muted:         #938da9;
+  --font-display:  'Cinzel', serif;
+  --font-body:     'Sora', sans-serif;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  background:var(--obsidian);
+  color:var(--text);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  cursor:default;
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+}
+::selection{ background:var(--purple-2); color:#fff; }
+a{ color:inherit; text-decoration:none; }
+
+/* =====================================================================
+   INTRO — WATER (top-left) + LAVA (bottom-right) CONVERGE, THEN BLACK
+===================================================================== */
+#intro{
+  position:fixed; inset:0; z-index:9999;
+  background:var(--obsidian);
+  overflow:hidden;
+  pointer-events:none;
+}
+#intro .tide{
+  position:absolute;
+  width:150vmax; height:150vmax;
+  border-radius:42%;
+  opacity:0;
+  filter:blur(2px);
+}
+#intro .tide-water{
+  top:-95vmax; left:-95vmax;
+  background:
+    radial-gradient(circle at 70% 30%, var(--water-2), var(--water) 40%, #063a68 75%, transparent 78%);
+  transform:translate(0,0) scale(0.55) rotate(0deg);
+  box-shadow: 0 0 160px 40px rgba(31,162,255,0.55) inset;
+}
+#intro .tide-lava{
+  bottom:-95vmax; right:-95vmax;
+  background:
+    radial-gradient(circle at 30% 70%, var(--ember-2), var(--ember) 42%, #4a0f05 76%, transparent 79%);
+  transform:translate(0,0) scale(0.55) rotate(0deg);
+  box-shadow: 0 0 160px 40px rgba(255,77,46,0.55) inset;
+}
+#intro.run .tide-water{
+  animation: water-in 1.85s cubic-bezier(.61,.02,.31,1) forwards;
+}
+#intro.run .tide-lava{
+  animation: lava-in 1.85s cubic-bezier(.61,.02,.31,1) forwards;
+}
+@keyframes water-in{
+  0%   { opacity:0;   transform:translate(0,0) scale(0.4) rotate(-8deg); }
+  12%  { opacity:1; }
+  100% { opacity:1;   transform:translate(53vmax,53vmax) scale(1.05) rotate(6deg); }
+}
+@keyframes lava-in{
+  0%   { opacity:0;   transform:translate(0,0) scale(0.4) rotate(8deg); }
+  12%  { opacity:1; }
+  100% { opacity:1;   transform:translate(-53vmax,-53vmax) scale(1.05) rotate(-6deg); }
+}
+#intro .impact{
+  position:absolute; left:50%; top:50%;
+  width:10px; height:10px;
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  background:radial-gradient(circle, #fff 0%, var(--purple-glow) 25%, var(--purple-2) 55%, transparent 72%);
+  opacity:0;
+}
+#intro.impact-run .impact{
+  animation: impact-burst 0.9s cubic-bezier(.2,.85,.35,1) forwards;
+}
+@keyframes impact-burst{
+  0%   { opacity:0;   transform:translate(-50%,-50%) scale(0); }
+  35%  { opacity:1;   transform:translate(-50%,-50%) scale(1); }
+  100% { opacity:0;   transform:translate(-50%,-50%) scale(38); }
+}
+#intro .blackout{
+  position:absolute; inset:0;
+  background:#000;
+  opacity:0;
+}
+#intro.fade-black .blackout{
+  animation: to-black 0.9s ease-in forwards;
+}
+@keyframes to-black{ from{opacity:0;} to{opacity:1;} }
+
+#intro.hide{
+  animation: intro-hide 0.6s ease forwards;
+}
+@keyframes intro-hide{ to{ opacity:0; visibility:hidden; } }
+
+/* =====================================================================
+   APP SHELL
+===================================================================== */
+#app{
+  position:relative;
+  min-height:100vh;
+  opacity:0;
+  transition:opacity 1s ease;
+}
+#app.show{ opacity:1; }
+
+#bg-glow{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(600px circle at var(--mx,50%) var(--my,50%), var(--purple-soft), transparent 60%),
+    radial-gradient(1200px circle at 15% 10%, rgba(109,40,217,0.14), transparent 55%),
+    radial-gradient(1200px circle at 85% 90%, rgba(147,51,234,0.12), transparent 55%),
+    linear-gradient(160deg, var(--obsidian) 0%, var(--obsidian-2) 55%, var(--obsidian) 100%);
+  transition:background 0.15s linear;
+}
+#bg-glow::after{
+  content:'';
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(circle at var(--mx,50%) var(--my,50%), black, transparent 65%);
+}
+
+header{
+  position:relative; z-index:2;
+  text-align:center;
+  padding:min(9vh,72px) 24px 18px;
+}
+header .eyebrow{
+  font-family:var(--font-body);
+  font-size:12px;
+  letter-spacing:0.42em;
+  text-transform:uppercase;
+  color:var(--purple-glow);
+  opacity:0.85;
+}
+header h1{
+  font-family:var(--font-display);
+  font-weight:900;
+  font-size:clamp(2.1rem, 6vw, 4rem);
+  letter-spacing:0.03em;
+  margin-top:10px;
+  background:linear-gradient(120deg, #fff 0%, var(--purple-glow) 45%, var(--purple-2) 75%, #fff 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  text-shadow:0 0 60px rgba(147,51,234,0.35);
+}
+header p.sub{
+  margin-top:12px;
+  color:var(--muted);
+  font-size:14px;
+  letter-spacing:0.02em;
+}
+
+/* =====================================================================
+   CAROUSEL — VERTICAL 9:16 CAPSULE POSTERS
+===================================================================== */
+.carousel-wrap{
+  position:relative; z-index:2;
+  display:flex; align-items:center;
+  gap:8px;
+  padding:min(6vh,48px) 4vw min(8vh,64px);
+}
+.carousel{
+  flex:1;
+  display:flex;
+  gap:6vw;
+  overflow-x:auto;
+  overflow-y:visible;
+  scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;
+  padding:8vh 20vw;
+  -ms-overflow-style:none;
+  scrollbar-width:none;
+  cursor:grab;
+  user-select:none;
+}
+.carousel::-webkit-scrollbar{ display:none; }
+.carousel.dragging{ cursor:grabbing; scroll-snap-type:none; }
+
+.poster{
+  position:relative;
+  flex:0 0 auto;
+  width:min(30vw, 232px);
+  aspect-ratio:9/16;
+  border-radius:50% / 20%;
+  scroll-snap-align:center;
+  background-size:cover;
+  background-position:center;
+  background-color:var(--obsidian-3);
+  border:1px solid rgba(168,85,247,0.18);
+  box-shadow:
+    0 20px 50px rgba(0,0,0,0.55),
+    0 0 0 rgba(168,85,247,0);
+  transform:scale(0.78);
+  opacity:0.45;
+  filter:saturate(0.6) brightness(0.55);
+  transition:box-shadow 0.35s ease, filter 0.35s ease, border-color 0.35s ease;
+  will-change:transform;
+  cursor:pointer;
+}
+.poster::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:inherit;
+  background:linear-gradient(200deg, transparent 45%, rgba(0,0,0,0.55) 100%);
+}
+.poster .label{
+  position:absolute; left:0; right:0; bottom:9%;
+  text-align:center;
+  font-family:var(--font-body);
+  font-weight:700;
+  font-size:clamp(12px,1.4vw,15px);
+  letter-spacing:0.03em;
+  color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,0.8);
+  padding:0 12%;
+}
+.poster.active{
+  transform:scale(1.16);
+  opacity:1;
+  filter:saturate(1.05) brightness(1);
+  border-color:var(--purple-glow);
+  box-shadow:
+    0 25px 70px rgba(0,0,0,0.6),
+    0 0 55px 6px rgba(168,85,247,0.55),
+    0 0 120px 20px rgba(147,51,234,0.25);
+  z-index:3;
+}
+.poster:hover{
+  filter:saturate(1) brightness(0.9);
+}
+
+.nav-arrow{
+  flex:0 0 auto;
+  width:44px; height:44px;
+  border-radius:50%;
+  border:1px solid rgba(168,85,247,0.35);
+  background:rgba(20,15,30,0.6);
+  color:var(--purple-glow);
+  font-size:20px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  backdrop-filter:blur(6px);
+  transition:box-shadow 0.25s ease, transform 0.15s ease, background 0.25s ease;
+  z-index:3;
+}
+.nav-arrow:hover{
+  box-shadow:0 0 25px rgba(168,85,247,0.55);
+  background:rgba(109,40,217,0.35);
+}
+.nav-arrow:active{ transform:scale(0.92); }
+
+footer{
+  position:relative; z-index:2;
+  text-align:center;
+  padding:24px 16px 48px;
+  color:var(--muted);
+  font-size:12px;
+  letter-spacing:0.06em;
+}
+footer span{ color:var(--purple-glow); }
+
+/* =====================================================================
+   LOADING OVERLAY — SHARINGAN + PURPLE MUD
+===================================================================== */
+#loading-overlay{
+  position:fixed; inset:0; z-index:99999;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at center, rgba(10,6,16,0.96), #000 88%);
+  opacity:0; pointer-events:none;
+  transition:opacity 0.35s ease;
+}
+#loading-overlay.show{ opacity:1; pointer-events:all; }
+
+.mud-field{ position:absolute; inset:0; overflow:hidden; }
+.mud-blob{
+  position:absolute;
+  width:38vmax; height:38vmax;
+  background:radial-gradient(circle at 35% 35%, var(--purple-glow), var(--purple-2) 45%, var(--purple-1) 70%, transparent 78%);
+  filter:blur(6px);
+  opacity:0;
+  border-radius:42% 58% 63% 37% / 41% 44% 56% 59%;
+}
+#loading-overlay.show .mud-blob{ animation: mud-in 1.4s ease forwards, mud-morph 4s ease-in-out infinite 1.4s; }
+.mud-blob.b1{ top:-14vmax; left:-14vmax; animation-delay:0s; }
+.mud-blob.b2{ bottom:-16vmax; right:-16vmax; animation-delay:0.12s; }
+.mud-blob.b3{ top:50%; left:50%; width:20vmax; height:20vmax; margin:-10vmax; animation-delay:0.22s; opacity:0; }
+@keyframes mud-in{
+  0%   { opacity:0; transform:scale(0.4) rotate(0deg); }
+  55%  { opacity:0.55; }
+  100% { opacity:0.4; transform:scale(1) rotate(25deg); }
+}
+@keyframes mud-morph{
+  0%,100%{ border-radius:42% 58% 63% 37% / 41% 44% 56% 59%; transform:scale(1) rotate(0deg); }
+  50%{ border-radius:63% 37% 41% 59% / 55% 62% 38% 45%; transform:scale(1.08) rotate(12deg); }
+}
+
+.sharingan-wrap{
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center; gap:22px;
+  transform:scale(0.6);
+  opacity:0;
+}
+#loading-overlay.show .sharingan-wrap{
+  animation: eye-appear 0.7s cubic-bezier(.2,.8,.3,1.2) forwards 0.25s;
+}
+@keyframes eye-appear{ to{ transform:scale(1); opacity:1; } }
+
+.sharingan{ width:min(34vw,150px); height:min(34vw,150px); filter:drop-shadow(0 0 26px rgba(168,85,247,0.65)); }
+.sharingan .iris{ animation: iris-spin 3.2s linear infinite; transform-origin:100px 100px; }
+@keyframes iris-spin{ to{ transform:rotate(360deg); } }
+.sharingan .ring{ animation: ring-pulse 1.6s ease-in-out infinite; transform-origin:100px 100px; }
+@keyframes ring-pulse{ 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
+
+.loading-text{
+  font-family:var(--font-display);
+  letter-spacing:0.24em;
+  text-transform:uppercase;
+  font-size:13px;
+  color:var(--purple-glow);
+  text-shadow:0 0 18px rgba(168,85,247,0.7);
+}
+.loading-text::after{
+  content:'';
+  display:inline-block;
+  width:1ch;
+  animation:dots 1.2s steps(4) infinite;
+}
+@keyframes dots{
+  0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} 100%{content:''}
+}
+
+@media (max-width:640px){
+  .poster{ width:44vw; }
+  .carousel{ gap:8vw; padding:6vh 26vw; }
+  .nav-arrow{ display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- =====================================================================
+     INTRO SEQUENCE (water + lava converge -> flash -> black -> reveal app)
+===================================================================== -->
+<div id="intro">
+  <div class="tide tide-water"></div>
+  <div class="tide tide-lava"></div>
+  <div class="impact"></div>
+  <div class="blackout"></div>
+</div>
+
+<!-- =====================================================================
+     MAIN APP
+===================================================================== -->
+<div id="app">
+  <div id="bg-glow"></div>
+
+  <header>
+    <div class="eyebrow">Anime4u Networks</div>
+    <h1>Choose Your Channel</h1>
+    <p class="sub">Drag, swipe, or use the arrows — tap a poster to enter.</p>
+  </header>
+
+  <div class="carousel-wrap">
+    <button class="nav-arrow" id="prevBtn" aria-label="Previous">&#8249;</button>
+    <div class="carousel" id="carousel"></div>
+    <button class="nav-arrow" id="nextBtn" aria-label="Next">&#8250;</button>
+  </div>
+
+  <footer>Anime4u Networks &mdash; powered by <span>obsidian &amp; purple fire</span></footer>
+</div>
+
+<!-- =====================================================================
+     LOADING OVERLAY (Sharingan + purple mud, shown while redirecting)
+===================================================================== -->
+<div id="loading-overlay">
+  <div class="mud-field">
+    <div class="mud-blob b1"></div>
+    <div class="mud-blob b2"></div>
+    <div class="mud-blob b3"></div>
+  </div>
+  <div class="sharingan-wrap">
+    <svg class="sharingan" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="96" fill="#0a0a0a"/>
+      <circle cx="100" cy="100" r="88" fill="#8f0000"/>
+      <circle cx="100" cy="100" r="88" fill="url(#irisGrad)"/>
+      <g class="iris">
+        <circle cx="100" cy="100" r="14" fill="#050505"/>
+        <g fill="#050505">
+          <path d="M100,42 C118,42 128,58 122,72 C116,84 100,84 100,68 C100,56 92,50 82,52 C88,44 94,42 100,42 Z"/>
+        </g>
+        <g fill="#050505" transform="rotate(120 100 100)">
+          <path d="M100,42 C118,42 128,58 122,72 C116,84 100,84 100,68 C100,56 92,50 82,52 C88,44 94,42 100,42 Z"/>
+        </g>
+        <g fill="#050505" transform="rotate(240 100 100)">
+          <path d="M100,42 C118,42 128,58 122,72 C116,84 100,84 100,68 C100,56 92,50 82,52 C88,44 94,42 100,42 Z"/>
+        </g>
+      </g>
+      <circle class="ring" cx="100" cy="100" r="88" fill="none" stroke="#c084fc" stroke-width="2.5"/>
+      <circle cx="100" cy="100" r="96" fill="none" stroke="#000" stroke-width="6"/>
+      <defs>
+        <radialGradient id="irisGrad" cx="50%" cy="50%" r="65%">
+          <stop offset="0%" stop-color="#c0392b"/>
+          <stop offset="65%" stop-color="#8f0000"/>
+          <stop offset="100%" stop-color="#5e0000"/>
+        </radialGradient>
+      </defs>
+    </svg>
+    <div class="loading-text">Opening Portal</div>
+  </div>
+</div>
+
+
+<script>
+/* =====================================================================================
+   ██████  ADMIN CONTROL PANEL — EDIT CHANNELS HERE, THEN COMMIT TO GITHUB  ██████
+   =====================================================================================
+   This is the ONLY block you should need to touch.
+   There is no visible "admin panel" on the website on purpose — you manage everything
+   by editing this array directly in the HTML file and pushing the change to your repo.
+
+   For each channel provide:
+     name   -> the text shown under the poster
+     poster -> a direct image URL (jpg/png/webp) for the vertical poster art
+     link   -> the URL the user is sent to after clicking the poster
+
+   Add a channel:    copy one { ... } block and paste it before the closing ]
+   Remove a channel:  delete its { ... } block
+   Reorder:           just move the blocks up/down in this list
+
+   After editing: save this file, then
+     git add index.html
+     git commit -m "update channels"
+     git push
+===================================================================================== */
+const CHANNELS = [
+  { name: "Shonen Prime",     poster: "https://picsum.photos/seed/anime4u1/540/960", link: "https://example.com/channel-1" },
+  { name: "Isekai Vault",     poster: "https://picsum.photos/seed/anime4u2/540/960", link: "https://example.com/channel-2" },
+  { name: "Seinen Archive",   poster: "https://picsum.photos/seed/anime4u3/540/960", link: "https://example.com/channel-3" },
+  { name: "Studio Classics",  poster: "https://picsum.photos/seed/anime4u4/540/960", link: "https://example.com/channel-4" },
+  { name: "Late Night OVA",   poster: "https://picsum.photos/seed/anime4u5/540/960", link: "https://example.com/channel-5" },
+  { name: "Sports & Slice",   poster: "https://picsum.photos/seed/anime4u6/540/960", link: "https://example.com/channel-6" },
+  { name: "Mecha Frontline",  poster: "https://picsum.photos/seed/anime4u7/540/960", link: "https://example.com/channel-7" },
+];
+/* =====================================================================================
+   END OF ADMIN CONTROL PANEL — nothing below this line needs manual editing
+===================================================================================== */
+
+
+/* ---------------------------------------------------------------------
+   INTRO SEQUENCE
+--------------------------------------------------------------------- */
+(function playIntro(){
+  const intro = document.getElementById('intro');
+  const app   = document.getElementById('app');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if(reduced){
+    intro.classList.add('hide');
+    app.classList.add('show');
+    return;
+  }
+
+  requestAnimationFrame(()=> intro.classList.add('run'));
+
+  setTimeout(()=> intro.classList.add('impact-run'), 1550);
+  setTimeout(()=> intro.classList.add('fade-black'), 2150);
+  setTimeout(()=> {
+    intro.classList.add('hide');
+    app.classList.add('show');
+  }, 3050);
+  setTimeout(()=> { intro.style.display = 'none'; }, 3700);
+})();
+
+
+/* ---------------------------------------------------------------------
+   BUILD CAROUSEL
+--------------------------------------------------------------------- */
+const carousel = document.getElementById('carousel');
+
+CHANNELS.forEach((ch, i)=>{
+  const el = document.createElement('div');
+  el.className = 'poster';
+  el.style.backgroundImage = `url("${ch.poster}")`;
+  el.dataset.index = i;
+  el.innerHTML = `<span class="label">${ch.name}</span>`;
+  el.addEventListener('click', (e)=>{
+    if(carousel.dataset.wasDragging === '1') return;
+    openChannel(ch.link);
+  });
+  carousel.appendChild(el);
+});
+
+const posters = Array.from(carousel.children);
+
+/* scale posters by distance from carousel center ("comes closer") */
+function updateScale(){
+  const cRect = carousel.getBoundingClientRect();
+  const center = cRect.left + cRect.width/2;
+  let closest = null, closestDist = Infinity;
+
+  posters.forEach(p=>{
+    const r = p.getBoundingClientRect();
+    const pCenter = r.left + r.width/2;
+    const dist = Math.abs(pCenter - center);
+    const norm = Math.min(dist / (cRect.width/2), 1.4);
+    const scale = 1.16 - norm*0.42;
+    const opacity = 1 - norm*0.62;
+    p.style.transform = `scale(${Math.max(scale,0.55)})`;
+    p.style.opacity = Math.max(opacity, 0.28);
+    p.classList.toggle('active', dist < closestDist);
+    if(dist < closestDist){ closestDist = dist; closest = p; }
+  });
+  posters.forEach(p=> p.classList.toggle('active', p === closest));
+}
+
+let scaleRaf = null;
+function requestScaleUpdate(){
+  if(scaleRaf) return;
+  scaleRaf = requestAnimationFrame(()=>{ updateScale(); scaleRaf = null; });
+}
+carousel.addEventListener('scroll', requestScaleUpdate, { passive:true });
+window.addEventListener('resize', requestScaleUpdate);
+
+/* center the first poster once laid out */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    const first = posters[0];
+    if(first){
+      carousel.scrollLeft = first.offsetLeft - (carousel.clientWidth/2 - first.clientWidth/2);
+    }
+    updateScale();
+  }, 60);
+});
+
+/* ---------------------------------------------------------------------
+   DRAG TO SLIDE (mouse) + click-vs-drag detection
+--------------------------------------------------------------------- */
+let isDown = false, startX = 0, startScroll = 0, moved = 0;
+
+carousel.addEventListener('pointerdown', (e)=>{
+  isDown = true; moved = 0;
+  carousel.classList.add('dragging');
+  carousel.dataset.wasDragging = '0';
+  startX = e.clientX;
+  startScroll = carousel.scrollLeft;
+  carousel.setPointerCapture(e.pointerId);
+});
+carousel.addEventListener('pointermove', (e)=>{
+  if(!isDown) return;
+  const dx = e.clientX - startX;
+  moved = Math.max(moved, Math.abs(dx));
+  carousel.scrollLeft = startScroll - dx;
+  requestScaleUpdate();
+});
+function endDrag(){
+  if(!isDown) return;
+  isDown = false;
+  carousel.classList.remove('dragging');
+  carousel.dataset.wasDragging = moved > 6 ? '1' : '0';
+}
+carousel.addEventListener('pointerup', endDrag);
+carousel.addEventListener('pointerleave', endDrag);
+carousel.addEventListener('pointercancel', endDrag);
+
+/* ---------------------------------------------------------------------
+   ARROW NAV
+--------------------------------------------------------------------- */
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  const step = (posters[0]?.clientWidth || 220) + carousel.clientWidth*0.06;
+  carousel.scrollBy({ left:-step, behavior:'smooth' });
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  const step = (posters[0]?.clientWidth || 220) + carousel.clientWidth*0.06;
+  carousel.scrollBy({ left:step, behavior:'smooth' });
+});
+
+/* ---------------------------------------------------------------------
+   CURSOR-REACTIVE OBSIDIAN PURPLE GLOW
+--------------------------------------------------------------------- */
+const bgGlow = document.getElementById('bg-glow');
+let glowRaf = null, lastX = 50, lastY = 50;
+window.addEventListener('pointermove', (e)=>{
+  lastX = (e.clientX / window.innerWidth) * 100;
+  lastY = (e.clientY / window.innerHeight) * 100;
+  if(glowRaf) return;
+  glowRaf = requestAnimationFrame(()=>{
+    bgGlow.style.setProperty('--mx', lastX + '%');
+    bgGlow.style.setProperty('--my', lastY + '%');
+    glowRaf = null;
+  });
+});
+
+/* ---------------------------------------------------------------------
+   SHARINGAN LOADING OVERLAY -> REDIRECT
+--------------------------------------------------------------------- */
+const overlay = document.getElementById('loading-overlay');
+
+function openChannel(link){
+  overlay.classList.add('show');
+  setTimeout(()=>{
+    window.open(link, '_blank', 'noopener');
+    overlay.classList.remove('show');
+  }, 1450);
+}
+</script>
+</body>
+</html>
